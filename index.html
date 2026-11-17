@@ -1,127 +1,1067 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 
 <head>
-    <title>Super Resolution Test</title>
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>AI Image Super Resolution</title>
 
     <style>
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
         body {
-            font-family: Arial;
-            text-align: center;
+            font-family:
+                Inter,
+                Arial,
+                sans-serif;
+
+            min-height: 100vh;
+
+            background:
+                linear-gradient(
+                    135deg,
+                    #f5f7fa,
+                    #e4e8ef
+                );
+
+            color: #171717;
+
+            padding: 40px 20px;
+        }
+
+
+        /* =========================
+           Main Container
+           ========================= */
+
+        .container {
+            max-width: 1100px;
+
+            margin: auto;
+
+            background: white;
+
+            border-radius: 20px;
+
             padding: 40px;
+
+            box-shadow:
+                0 20px 60px
+                rgba(0, 0, 0, 0.10);
         }
 
-        img {
-            max-width: 400px;
-            margin: 20px;
-            border: 1px solid #ccc;
+
+        /* =========================
+           Header
+           ========================= */
+
+        .header {
+            text-align: center;
+
+            margin-bottom: 35px;
         }
 
-        button {
-            padding: 12px 20px;
+        .header h1 {
+            font-size: 36px;
+
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            color: #666;
+
+            font-size: 16px;
+        }
+
+
+        /* =========================
+           Upload Area
+           ========================= */
+
+        .upload-area {
+            border: 2px dashed #bdbdbd;
+
+            border-radius: 16px;
+
+            padding: 45px 20px;
+
+            text-align: center;
+
             cursor: pointer;
+
+            transition: 0.25s;
+
+            background: #fafafa;
         }
 
-        #status {
-            margin: 20px;
+        .upload-area:hover {
+            border-color: #222;
+
+            background: #f5f5f5;
+        }
+
+        .upload-area.dragover {
+            border-color: #111;
+
+            background: #eeeeee;
+        }
+
+        .upload-icon {
+            font-size: 45px;
+
+            margin-bottom: 15px;
+        }
+
+        .upload-area h3 {
+            margin-bottom: 8px;
+        }
+
+        .upload-area p {
+            color: #777;
+
+            margin-bottom: 15px;
+        }
+
+        .browse {
+            display: inline-block;
+
+            padding: 10px 20px;
+
+            background: #171717;
+
+            color: white;
+
+            border-radius: 8px;
+
+            font-size: 14px;
+        }
+
+        #fileInput {
+            display: none;
+        }
+
+
+        /* =========================
+           File Information
+           ========================= */
+
+        .file-info {
+            display: none;
+
+            margin-top: 20px;
+
+            padding: 14px;
+
+            border-radius: 10px;
+
+            background: #f5f5f5;
+
+            justify-content: space-between;
+
+            align-items: center;
+
+            gap: 15px;
+        }
+
+        .file-name {
+            overflow: hidden;
+
+            text-overflow: ellipsis;
+
+            white-space: nowrap;
+        }
+
+        .remove-btn {
+            border: none;
+
+            background: transparent;
+
+            color: #d00;
+
+            cursor: pointer;
+
             font-weight: bold;
         }
+
+
+        /* =========================
+           Enhance Button
+           ========================= */
+
+        .button-container {
+            text-align: center;
+
+            margin-top: 25px;
+        }
+
+        #enhanceBtn {
+            border: none;
+
+            background: #171717;
+
+            color: white;
+
+            padding: 14px 35px;
+
+            font-size: 16px;
+
+            border-radius: 9px;
+
+            cursor: pointer;
+
+            transition: 0.2s;
+        }
+
+        #enhanceBtn:hover {
+            background: #333;
+        }
+
+        #enhanceBtn:disabled {
+            background: #aaa;
+
+            cursor: not-allowed;
+        }
+
+
+        /* =========================
+           Status
+           ========================= */
+
+        .status {
+            text-align: center;
+
+            margin-top: 20px;
+
+            min-height: 25px;
+
+            font-size: 15px;
+        }
+
+        .status.success {
+            color: #16803c;
+        }
+
+        .status.error {
+            color: #d00000;
+        }
+
+
+        /* =========================
+           Loading
+           ========================= */
+
+        .loader {
+            display: none;
+
+            width: 20px;
+
+            height: 20px;
+
+            border: 3px solid #ddd;
+
+            border-top-color: #171717;
+
+            border-radius: 50%;
+
+            animation:
+                spin 0.8s linear infinite;
+
+            margin: 0 auto 10px;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+
+        /* =========================
+           Results
+           ========================= */
+
+        .results {
+            display: none;
+
+            margin-top: 45px;
+        }
+
+        .results h2 {
+            text-align: center;
+
+            margin-bottom: 25px;
+        }
+
+        .image-grid {
+            display: grid;
+
+            grid-template-columns:
+                repeat(2, 1fr);
+
+            gap: 25px;
+        }
+
+        .image-card {
+            background: #f7f7f7;
+
+            border-radius: 14px;
+
+            padding: 18px;
+
+            text-align: center;
+        }
+
+        .image-card h3 {
+            margin-bottom: 15px;
+        }
+
+        .image-wrapper {
+            min-height: 250px;
+
+            display: flex;
+
+            justify-content: center;
+
+            align-items: center;
+
+            background: #fff;
+
+            border-radius: 10px;
+
+            overflow: hidden;
+        }
+
+        .image-wrapper img {
+            max-width: 100%;
+
+            max-height: 500px;
+
+            object-fit: contain;
+        }
+
+
+        /* =========================
+           Image Information
+           ========================= */
+
+        .image-info {
+            margin-top: 12px;
+
+            font-size: 13px;
+
+            color: #666;
+        }
+
+
+        /* =========================
+           Download
+           ========================= */
+
+        .download-container {
+            text-align: center;
+
+            margin-top: 25px;
+        }
+
+        .download-btn {
+            display: inline-block;
+
+            padding: 12px 25px;
+
+            background: #171717;
+
+            color: white;
+
+            text-decoration: none;
+
+            border-radius: 8px;
+
+            font-size: 14px;
+        }
+
+        .download-btn:hover {
+            background: #333;
+        }
+
+
+        /* =========================
+           API Status
+           ========================= */
+
+        .api-status {
+            text-align: center;
+
+            margin-top: 35px;
+
+            padding-top: 20px;
+
+            border-top: 1px solid #eee;
+
+            color: #777;
+
+            font-size: 13px;
+        }
+
+        .dot {
+            display: inline-block;
+
+            width: 8px;
+
+            height: 8px;
+
+            border-radius: 50%;
+
+            background: #999;
+
+            margin-right: 5px;
+        }
+
+        .dot.online {
+            background: #18a558;
+        }
+
+        .dot.offline {
+            background: #d00000;
+        }
+
+
+        /* =========================
+           Responsive
+           ========================= */
+
+        @media (max-width: 700px) {
+
+            body {
+                padding: 15px;
+            }
+
+            .container {
+                padding: 25px 18px;
+            }
+
+            .header h1 {
+                font-size: 28px;
+            }
+
+            .image-grid {
+                grid-template-columns: 1fr;
+            }
+
+        }
+
     </style>
+
 </head>
+
 
 <body>
 
-    <h1>Super Resolution Test</h1>
+    <div class="container">
 
-    <input
-        type="file"
-        id="file"
-        accept="image/*"
-    >
 
-    <br><br>
+        <!-- =====================
+             Header
+             ===================== -->
 
-    <button onclick="upscale()">
-        Enhance Image
-    </button>
+        <div class="header">
 
-    <p id="status"></p>
+            <h1>
+                AI Image Super Resolution
+            </h1>
 
-    <div>
-        <h3>Original</h3>
-        <img id="original">
-    </div>
+            <p>
+                Enhance your image using a
+                2× PyTorch super-resolution model.
+            </p>
 
-    <div>
-        <h3>Enhanced</h3>
-        <img id="result">
+        </div>
+
+
+        <!-- =====================
+             Upload
+             ===================== -->
+
+        <div
+            class="upload-area"
+            id="uploadArea"
+        >
+
+            <div class="upload-icon">
+                🖼️
+            </div>
+
+            <h3>
+                Upload an image
+            </h3>
+
+            <p>
+                Drag & drop your image here
+                or select a file
+            </p>
+
+            <span class="browse">
+                Choose Image
+            </span>
+
+            <input
+                type="file"
+                id="fileInput"
+                accept="image/*"
+            >
+
+        </div>
+
+
+        <!-- =====================
+             File Info
+             ===================== -->
+
+        <div
+            class="file-info"
+            id="fileInfo"
+        >
+
+            <span
+                class="file-name"
+                id="fileName"
+            ></span>
+
+            <button
+                class="remove-btn"
+                id="removeBtn"
+            >
+                Remove
+            </button>
+
+        </div>
+
+
+        <!-- =====================
+             Button
+             ===================== -->
+
+        <div class="button-container">
+
+            <button
+                id="enhanceBtn"
+                disabled
+            >
+                Enhance Image 2×
+            </button>
+
+        </div>
+
+
+        <!-- =====================
+             Status
+             ===================== -->
+
+        <div class="status">
+
+            <div
+                class="loader"
+                id="loader"
+            ></div>
+
+            <p id="statusText"></p>
+
+        </div>
+
+
+        <!-- =====================
+             Results
+             ===================== -->
+
+        <div
+            class="results"
+            id="results"
+        >
+
+            <h2>
+                Result
+            </h2>
+
+
+            <div class="image-grid">
+
+
+                <!-- Original -->
+
+                <div class="image-card">
+
+                    <h3>
+                        Original
+                    </h3>
+
+                    <div class="image-wrapper">
+
+                        <img
+                            id="originalImage"
+                            alt="Original image"
+                        >
+
+                    </div>
+
+                    <div
+                        class="image-info"
+                        id="originalInfo"
+                    ></div>
+
+                </div>
+
+
+                <!-- Enhanced -->
+
+                <div class="image-card">
+
+                    <h3>
+                        Enhanced 2×
+                    </h3>
+
+                    <div class="image-wrapper">
+
+                        <img
+                            id="enhancedImage"
+                            alt="Enhanced image"
+                        >
+
+                    </div>
+
+                    <div
+                        class="image-info"
+                        id="enhancedInfo"
+                    ></div>
+
+                </div>
+
+
+            </div>
+
+
+            <!-- Download -->
+
+            <div class="download-container">
+
+                <a
+                    id="downloadBtn"
+                    class="download-btn"
+                    download="enhanced-image.png"
+                >
+                    Download Enhanced Image
+                </a>
+
+            </div>
+
+        </div>
+
+
+        <!-- =====================
+             API Status
+             ===================== -->
+
+        <div class="api-status">
+
+            <span
+                class="dot"
+                id="apiDot"
+            ></span>
+
+            <span id="apiText">
+                Checking API...
+            </span>
+
+        </div>
+
+
     </div>
 
 
     <script>
 
-        const API_URL =
-            "https://image-super-resolution-api.onrender.com/upscale";
+
+        // ====================================================
+        // CONFIGURATION
+        // ====================================================
+
+        const API_BASE_URL =
+            "https://image-super-resolution-api.onrender.com";
 
 
-        async function upscale() {
-
-            const fileInput =
-                document.getElementById("file");
-
-            const original =
-                document.getElementById("original");
-
-            const result =
-                document.getElementById("result");
-
-            const status =
-                document.getElementById("status");
+        const UPSCALE_URL =
+            API_BASE_URL + "/upscale";
 
 
-            if (!fileInput.files.length) {
+        const HEALTH_URL =
+            API_BASE_URL + "/health";
 
-                status.innerText =
-                    "Please select an image.";
+
+        // ====================================================
+        // Elements
+        // ====================================================
+
+        const uploadArea =
+            document.getElementById(
+                "uploadArea"
+            );
+
+        const fileInput =
+            document.getElementById(
+                "fileInput"
+            );
+
+        const fileInfo =
+            document.getElementById(
+                "fileInfo"
+            );
+
+        const fileName =
+            document.getElementById(
+                "fileName"
+            );
+
+        const removeBtn =
+            document.getElementById(
+                "removeBtn"
+            );
+
+        const enhanceBtn =
+            document.getElementById(
+                "enhanceBtn"
+            );
+
+        const loader =
+            document.getElementById(
+                "loader"
+            );
+
+        const statusText =
+            document.getElementById(
+                "statusText"
+            );
+
+        const results =
+            document.getElementById(
+                "results"
+            );
+
+        const originalImage =
+            document.getElementById(
+                "originalImage"
+            );
+
+        const enhancedImage =
+            document.getElementById(
+                "enhancedImage"
+            );
+
+        const originalInfo =
+            document.getElementById(
+                "originalInfo"
+            );
+
+        const enhancedInfo =
+            document.getElementById(
+                "enhancedInfo"
+            );
+
+        const downloadBtn =
+            document.getElementById(
+                "downloadBtn"
+            );
+
+        const apiDot =
+            document.getElementById(
+                "apiDot"
+            );
+
+        const apiText =
+            document.getElementById(
+                "apiText"
+            );
+
+
+        let selectedFile = null;
+
+        let enhancedURL = null;
+
+
+        // ====================================================
+        // Open file selector
+        // ====================================================
+
+        uploadArea.addEventListener(
+            "click",
+            () => {
+
+                fileInput.click();
+
+            }
+        );
+
+
+        // ====================================================
+        // File selected
+        // ====================================================
+
+        fileInput.addEventListener(
+            "change",
+            () => {
+
+                if (
+                    fileInput.files.length
+                ) {
+
+                    setFile(
+                        fileInput.files[0]
+                    );
+
+                }
+
+            }
+        );
+
+
+        // ====================================================
+        // Set file
+        // ====================================================
+
+        function setFile(file) {
+
+            if (
+                !file.type.startsWith(
+                    "image/"
+                )
+            ) {
+
+                showError(
+                    "Please select an image file."
+                );
 
                 return;
+
             }
 
 
-            const file =
-                fileInput.files[0];
+            selectedFile = file;
 
 
-            // Display original
-            original.src =
-                URL.createObjectURL(file);
+            fileName.textContent =
+                file.name;
 
 
-            // Create form
-            const formData =
-                new FormData();
+            fileInfo.style.display =
+                "flex";
 
-            formData.append(
-                "file",
-                file
-            );
+
+            enhanceBtn.disabled =
+                false;
+
+
+            statusText.textContent =
+                "";
+
+
+            results.style.display =
+                "none";
+
+
+            const url =
+                URL.createObjectURL(
+                    file
+                );
+
+
+            originalImage.src =
+                url;
+
+
+            originalImage.onload =
+                () => {
+
+                    originalInfo.textContent =
+                        `${originalImage.naturalWidth} × ${originalImage.naturalHeight}px`;
+
+                };
+
+        }
+
+
+        // ====================================================
+        // Remove file
+        // ====================================================
+
+        removeBtn.addEventListener(
+            "click",
+            () => {
+
+                selectedFile = null;
+
+                fileInput.value = "";
+
+                fileInfo.style.display =
+                    "none";
+
+                enhanceBtn.disabled =
+                    true;
+
+                results.style.display =
+                    "none";
+
+                statusText.textContent =
+                    "";
+
+            }
+        );
+
+
+        // ====================================================
+        // Drag & Drop
+        // ====================================================
+
+        uploadArea.addEventListener(
+            "dragover",
+            (event) => {
+
+                event.preventDefault();
+
+                uploadArea.classList.add(
+                    "dragover"
+                );
+
+            }
+        );
+
+
+        uploadArea.addEventListener(
+            "dragleave",
+            () => {
+
+                uploadArea.classList.remove(
+                    "dragover"
+                );
+
+            }
+        );
+
+
+        uploadArea.addEventListener(
+            "drop",
+            (event) => {
+
+                event.preventDefault();
+
+                uploadArea.classList.remove(
+                    "dragover"
+                );
+
+
+                const files =
+                    event.dataTransfer.files;
+
+
+                if (files.length > 0) {
+
+                    setFile(
+                        files[0]
+                    );
+
+                }
+
+            }
+        );
+
+
+        // ====================================================
+        // Enhance
+        // ====================================================
+
+        enhanceBtn.addEventListener(
+            "click",
+            enhanceImage
+        );
+
+
+        async function enhanceImage() {
+
+            if (!selectedFile) {
+
+                showError(
+                    "Please select an image first."
+                );
+
+                return;
+
+            }
+
+
+            // Disable button
+            enhanceBtn.disabled =
+                true;
+
+
+            // Show loader
+            loader.style.display =
+                "block";
+
+
+            statusText.className =
+                "status";
+
+
+            statusText.textContent =
+                "Enhancing image...";
+
+
+            results.style.display =
+                "none";
 
 
             try {
 
-                status.innerText =
-                    "Sending image to Render...";
+
+                // ==========================================
+                // FormData
+                // ==========================================
+
+                const formData =
+                    new FormData();
+
+
+                formData.append(
+                    "file",
+                    selectedFile
+                );
+
+
+                console.log(
+                    "Sending:",
+                    selectedFile.name
+                );
 
 
                 console.log(
                     "API:",
-                    API_URL
+                    UPSCALE_URL
                 );
 
 
+                // ==========================================
+                // API request
+                // ==========================================
+
                 const response =
                     await fetch(
-                        API_URL,
+                        UPSCALE_URL,
                         {
                             method: "POST",
                             body: formData
@@ -130,21 +1070,50 @@
 
 
                 console.log(
-                    "Status:",
+                    "Response status:",
                     response.status
                 );
 
 
+                // ==========================================
+                // Check response
+                // ==========================================
+
                 if (!response.ok) {
 
-                    const error =
-                        await response.text();
+                    let errorMessage =
+                        "Server error";
+
+
+                    try {
+
+                        const errorData =
+                            await response.json();
+
+
+                        errorMessage =
+                            errorData.detail ||
+                            errorMessage;
+
+                    }
+                    catch {
+
+                        errorMessage =
+                            await response.text();
+
+                    }
+
 
                     throw new Error(
-                        error
+                        errorMessage
                     );
+
                 }
 
+
+                // ==========================================
+                // Convert response to Blob
+                // ==========================================
 
                 const blob =
                     await response.blob();
@@ -155,37 +1124,205 @@
                     blob.type
                 );
 
+
                 console.log(
                     "Response size:",
-                    blob.size
+                    blob.size,
+                    "bytes"
                 );
 
 
-                const imageURL =
-                    URL.createObjectURL(blob);
+                if (
+                    blob.size === 0
+                ) {
+
+                    throw new Error(
+                        "The server returned an empty image."
+                    );
+
+                }
 
 
-                result.src =
-                    imageURL;
+                // ==========================================
+                // Create image URL
+                // ==========================================
+
+                if (enhancedURL) {
+
+                    URL.revokeObjectURL(
+                        enhancedURL
+                    );
+
+                }
 
 
-                status.innerText =
-                    "Success!";
+                enhancedURL =
+                    URL.createObjectURL(
+                        blob
+                    );
 
 
-            } catch (error) {
+                enhancedImage.src =
+                    enhancedURL;
+
+
+                // ==========================================
+                // Wait for image
+                // ==========================================
+
+                enhancedImage.onload =
+                    () => {
+
+                        enhancedInfo.textContent =
+                            `${enhancedImage.naturalWidth} × ${enhancedImage.naturalHeight}px`;
+
+                    };
+
+
+                // ==========================================
+                // Download
+                // ==========================================
+
+                downloadBtn.href =
+                    enhancedURL;
+
+
+                // ==========================================
+                // Show results
+                // ==========================================
+
+                results.style.display =
+                    "block";
+
+
+                statusText.className =
+                    "status success";
+
+
+                statusText.textContent =
+                    "Image enhanced successfully!";
+
+
+            }
+            catch (error) {
 
                 console.error(
+                    "Enhancement error:",
                     error
                 );
 
-                status.innerText =
-                    "Error: " +
-                    error.message;
+
+                showError(
+                    "Enhancement failed: " +
+                    error.message
+                );
+
+            }
+            finally {
+
+                loader.style.display =
+                    "none";
+
+
+                enhanceBtn.disabled =
+                    false;
 
             }
 
         }
+
+
+        // ====================================================
+        // Error
+        // ====================================================
+
+        function showError(message) {
+
+            statusText.className =
+                "status error";
+
+
+            statusText.textContent =
+                message;
+
+        }
+
+
+        // ====================================================
+        // API health check
+        // ====================================================
+
+        async function checkAPI() {
+
+            try {
+
+                const response =
+                    await fetch(
+                        HEALTH_URL
+                    );
+
+
+                if (!response.ok) {
+
+                    throw new Error(
+                        "API unavailable"
+                    );
+
+                }
+
+
+                const data =
+                    await response.json();
+
+
+                if (
+                    data.status ===
+                    "healthy"
+                ) {
+
+                    apiDot.className =
+                        "dot online";
+
+
+                    apiText.textContent =
+                        "API Online";
+
+                }
+                else {
+
+                    throw new Error(
+                        "API unhealthy"
+                    );
+
+                }
+
+            }
+            catch (error) {
+
+                console.error(
+                    "API health check:",
+                    error
+                );
+
+
+                apiDot.className =
+                    "dot offline";
+
+
+                apiText.textContent =
+                    "API Offline";
+
+            }
+
+        }
+
+
+        // ====================================================
+        // Start
+        // ====================================================
+
+        checkAPI();
+
 
     </script>
 
