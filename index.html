@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Super Resolution Test</title>
+
+    <style>
+        body {
+            font-family: Arial;
+            text-align: center;
+            padding: 40px;
+        }
+
+        img {
+            max-width: 400px;
+            margin: 20px;
+            border: 1px solid #ccc;
+        }
+
+        button {
+            padding: 12px 20px;
+            cursor: pointer;
+        }
+
+        #status {
+            margin: 20px;
+            font-weight: bold;
+        }
+    </style>
+</head>
+
+<body>
+
+    <h1>Super Resolution Test</h1>
+
+    <input
+        type="file"
+        id="file"
+        accept="image/*"
+    >
+
+    <br><br>
+
+    <button onclick="upscale()">
+        Enhance Image
+    </button>
+
+    <p id="status"></p>
+
+    <div>
+        <h3>Original</h3>
+        <img id="original">
+    </div>
+
+    <div>
+        <h3>Enhanced</h3>
+        <img id="result">
+    </div>
+
+
+    <script>
+
+        const API_URL =
+            "https://image-super-resolution-api.onrender.com/upscale";
+
+
+        async function upscale() {
+
+            const fileInput =
+                document.getElementById("file");
+
+            const original =
+                document.getElementById("original");
+
+            const result =
+                document.getElementById("result");
+
+            const status =
+                document.getElementById("status");
+
+
+            if (!fileInput.files.length) {
+
+                status.innerText =
+                    "Please select an image.";
+
+                return;
+            }
+
+
+            const file =
+                fileInput.files[0];
+
+
+            // Display original
+            original.src =
+                URL.createObjectURL(file);
+
+
+            // Create form
+            const formData =
+                new FormData();
+
+            formData.append(
+                "file",
+                file
+            );
+
+
+            try {
+
+                status.innerText =
+                    "Sending image to Render...";
+
+
+                console.log(
+                    "API:",
+                    API_URL
+                );
+
+
+                const response =
+                    await fetch(
+                        API_URL,
+                        {
+                            method: "POST",
+                            body: formData
+                        }
+                    );
+
+
+                console.log(
+                    "Status:",
+                    response.status
+                );
+
+
+                if (!response.ok) {
+
+                    const error =
+                        await response.text();
+
+                    throw new Error(
+                        error
+                    );
+                }
+
+
+                const blob =
+                    await response.blob();
+
+
+                console.log(
+                    "Response type:",
+                    blob.type
+                );
+
+                console.log(
+                    "Response size:",
+                    blob.size
+                );
+
+
+                const imageURL =
+                    URL.createObjectURL(blob);
+
+
+                result.src =
+                    imageURL;
+
+
+                status.innerText =
+                    "Success!";
+
+
+            } catch (error) {
+
+                console.error(
+                    error
+                );
+
+                status.innerText =
+                    "Error: " +
+                    error.message;
+
+            }
+
+        }
+
+    </script>
+
+</body>
+
+</html>
