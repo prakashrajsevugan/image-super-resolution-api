@@ -3,6 +3,7 @@ import os
 
 import numpy as np
 import torch
+import torch.nn.functional as F
 
 from PIL import Image
 
@@ -21,12 +22,12 @@ from app.model import load_model
 
 
 # ============================================================
-# FastAPI Application
+# FastAPI
 # ============================================================
 
 app = FastAPI(
     title="Image Super Resolution API",
-    description="2x Image Super Resolution using PyTorch",
+    description="2x image super-resolution using PyTorch",
     version="1.0.0"
 )
 
@@ -34,11 +35,6 @@ app = FastAPI(
 # ============================================================
 # CORS
 # ============================================================
-
-# Allow requests from your HTML frontend.
-#
-# For testing, "*" is fine.
-# Later, replace "*" with your actual frontend URL.
 
 app.add_middleware(
     CORSMiddleware,
@@ -54,7 +50,7 @@ app.add_middleware(
 
 
 # ============================================================
-# Model Configuration
+# Model
 # ============================================================
 
 MODEL_PATH = os.getenv(
@@ -62,10 +58,6 @@ MODEL_PATH = os.getenv(
     "models/best_model.pth"
 )
 
-
-# ============================================================
-# Load Model Once
-# ============================================================
 
 try:
 
@@ -75,15 +67,14 @@ try:
 
 except Exception as e:
 
-    print(
-        f"ERROR: Could not load model: {e}"
-    )
+    print("MODEL LOADING FAILED")
+    print(str(e))
 
     raise
 
 
 # ============================================================
-# Root Endpoint
+# Root
 # ============================================================
 
 @app.get("/")
@@ -91,19 +82,15 @@ def root():
 
     return {
         "message": "Image Super Resolution API",
-
-        "model": "PyTorch Super Resolution",
-
+        "model": "PyTorch",
         "scale": "2x",
-
         "device": str(device),
-
         "status": "running"
     }
 
 
 # ============================================================
-# Health Endpoint
+# Health
 # ============================================================
 
 @app.get("/health")
@@ -111,31 +98,29 @@ def health():
 
     return {
         "status": "healthy",
-
         "model_loaded": True,
-
         "device": str(device)
     }
 
 
 # ============================================================
-# Image Upscaling Endpoint
+# Upscale
 # ============================================================
 
 @app.post("/upscale")
-async def upscale_image(
+async def upscale(
     file: UploadFile = File(...)
 ):
 
     # --------------------------------------------------------
-    # Validate file type
+    # Validate file
     # --------------------------------------------------------
 
     if not file.content_type:
 
         raise HTTPException(
             status_code=400,
-            detail="Could not determine file type."
+            detail="File type could not be detected."
         )
 
 
@@ -143,20 +128,20 @@ async def upscale_image(
 
         raise HTTPException(
             status_code=400,
-            detail="Please upload an image file."
+            detail="Please upload an image."
         )
 
 
     try:
 
-        # ----------------------------------------------------
-        # Read uploaded image
-        # ----------------------------------------------------
+        # ====================================================
+        # Read image
+        # ====================================================
 
         contents = await file.read()
 
 
-        if not contents:
+        if len(contents) == 0:
 
             raise HTTPException(
                 status_code=400,
@@ -164,22 +149,15 @@ async def upscale_image(
             )
 
 
-        print(
-            f"Received file: {file.filename}"
-        )
-
-        print(
-            f"Content type: {file.content_type}"
-        )
-
-        print(
-            f"File size: {len(contents)} bytes"
-        )
+        print("--------------------------------")
+        print("Received:", file.filename)
+        print("Content type:", file.content_type)
+        print("File size:", len(contents), "bytes")
 
 
-        # ----------------------------------------------------
-        # Open image
-        # ----------------------------------------------------
+        # ====================================================
+        # PIL image
+        # ====================================================
 
         image = Image.open(
             io.BytesIO(contents)
@@ -187,25 +165,21 @@ async def upscale_image(
 
 
         print(
-            f"Original image size: {image.size}"
+            "Original size:",
+            image.size
         )
 
 
-        # ----------------------------------------------------
+        # ====================================================
         # Convert to grayscale
-        #
-        # Your model expects:
-        #
-        # [batch, 1, height, width]
-        #
-        # ----------------------------------------------------
+        # ====================================================
 
         image = image.convert("L")
 
 
-        # ----------------------------------------------------
+        # ====================================================
         # PIL -> NumPy
-        # ----------------------------------------------------
+        # ====================================================
 
         image_np = np.asarray(
             image,
@@ -213,72 +187,112 @@ async def upscale_image(
         )
 
 
-        # ----------------------------------------------------
+        # ====================================================
         # Normalize
         #
-        # 0-255 -> 0-1
-        # ----------------------------------------------------
+        # 0 ... 255
+        #      ↓
+        # 0 ... 1
+        # ====================================================
 
         image_np = image_np / 255.0
 
 
-        # ----------------------------------------------------
-        # NumPy -> PyTorch
-        #
-        # Current:
+        # ====================================================
+        # NumPy -> Tensor
         #
         # H x W
         #
-        # Required:
+        # ->
         #
         # 1 x 1 x H x W
-        # ----------------------------------------------------
+        # ====================================================
 
         tensor = torch.from_numpy(
             image_np
         )
 
+        tensor = tensor.unsqueeze(0)
 
         tensor = tensor.unsqueeze(0)
 
-
-        tensor = tensor.unsqueeze(0)
-
-
-        # Move to CPU/GPU
         tensor = tensor.to(device)
 
 
         print(
-            f"Model input shape: {tuple(tensor.shape)}"
+            "Input tensor:",
+            tuple(tensor.shape)
         )
 
 
-        # ----------------------------------------------------
-        # Run model
-        # ----------------------------------------------------
+        # ====================================================
+        # MODEL INFERENCE
+        # ====================================================
 
         with torch.inference_mode():
 
-            output = model(
+            # Network predicts the residual
+            residual = model(
                 tensor
             )
 
 
+            # =================================================
+            # Bicubic base image
+            #
+            # This provides the basic 2x image.
+            # The neural network predicts the details
+            # that should be added to this image.
+            # =================================================
+
+            base = F.interpolate(
+                tensor,
+
+                scale_factor=2,
+
+                mode="bicubic",
+
+                align_corners=False
+            )
+
+
+            # =================================================
+            # Residual learning
+            # =================================================
+
+            output = base + residual
+
+
         print(
-            f"Model output shape: {tuple(output.shape)}"
+            "Residual range:",
+            float(residual.min()),
+            float(residual.max())
         )
 
 
-        # ----------------------------------------------------
-        # Remove batch and channel dimensions
+        print(
+            "Base range:",
+            float(base.min()),
+            float(base.max())
+        )
+
+
+        print(
+            "Output range before clamp:",
+            float(output.min()),
+            float(output.max())
+        )
+
+
+        # ====================================================
+        # Remove batch/channel dimensions
         #
         # 1 x 1 x H x W
         #
         # ->
         #
         # H x W
-        # ----------------------------------------------------
+        # ====================================================
 
         output = output.squeeze(
             0
@@ -287,16 +301,18 @@ async def upscale_image(
         )
 
 
-        # ----------------------------------------------------
-        # Move to CPU
-        # ----------------------------------------------------
+        # ====================================================
+        # CPU
+        # ====================================================
 
         output = output.cpu().numpy()
 
 
-        # ----------------------------------------------------
-        # Clamp values
-        # ----------------------------------------------------
+        # ====================================================
+        # Clamp
+        #
+        # Prevent values outside valid image range.
+        # ====================================================
 
         output = np.clip(
             output,
@@ -305,11 +321,13 @@ async def upscale_image(
         )
 
 
-        # ----------------------------------------------------
-        # Convert
+        # ====================================================
+        # 0 ... 1
         #
-        # 0-1 -> 0-255
-        # ----------------------------------------------------
+        # ->
+        #
+        # 0 ... 255
+        # ====================================================
 
         output = (
             output * 255.0
@@ -323,9 +341,9 @@ async def upscale_image(
         )
 
 
-        # ----------------------------------------------------
+        # ====================================================
         # NumPy -> PIL
-        # ----------------------------------------------------
+        # ====================================================
 
         output_image = Image.fromarray(
             output,
@@ -334,13 +352,14 @@ async def upscale_image(
 
 
         print(
-            f"Output image size: {output_image.size}"
+            "Output size:",
+            output_image.size
         )
 
 
-        # ----------------------------------------------------
-        # Save image into memory
-        # ----------------------------------------------------
+        # ====================================================
+        # Save image to memory
+        # ====================================================
 
         buffer = io.BytesIO()
 
@@ -351,16 +370,21 @@ async def upscale_image(
         )
 
 
-        # Move pointer to beginning
         buffer.seek(0)
 
 
-        # ----------------------------------------------------
+        print(
+            "Image generated successfully."
+        )
+
+        print("--------------------------------")
+
+
+        # ====================================================
         # Return image
-        # ----------------------------------------------------
+        # ====================================================
 
         return StreamingResponse(
-
             buffer,
 
             media_type="image/png",
@@ -379,21 +403,10 @@ async def upscale_image(
 
     except Exception as e:
 
-        print(
-            "===================================="
-        )
-
-        print(
-            "IMAGE PROCESSING ERROR"
-        )
-
-        print(
-            str(e)
-        )
-
-        print(
-            "===================================="
-        )
+        print("--------------------------------")
+        print("INFERENCE ERROR")
+        print(str(e))
+        print("--------------------------------")
 
 
         raise HTTPException(
